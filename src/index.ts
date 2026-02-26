@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { install } from "./commands/install.js";
 import { list } from "./commands/list.js";
+import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
 import { error, log } from "./utils.js";
 
@@ -10,11 +11,13 @@ skillmanager - Install and update Claude Code skills
 Usage:
   skillmanager install <local-path-or-github-url> [--force] [--dry-run]
   skillmanager list
+  skillmanager uninstall <skill-name> [--dry-run]
   skillmanager update [<skill-name>] [--all] [--force] [--dry-run]
 
 Commands:
   install    Install a skill from a local path or GitHub URL
   list       List all installed skills
+  uninstall  Remove an installed skill
   update     Check for updates and re-install changed skills
 
 Options:
@@ -27,6 +30,7 @@ Examples:
   skillmanager install ~/Code/my-plugins/skills/my-skill
   skillmanager install https://github.com/owner/repo/tree/branch/path/to/skill
   skillmanager install ./plugins/jira-utils/skills/use-jira-cli --force
+  skillmanager uninstall my-skill
   skillmanager update my-skill --dry-run
   skillmanager update --all
 `.trim();
@@ -98,6 +102,22 @@ async function main() {
     }
     case "list": {
       list();
+      break;
+    }
+    case "uninstall": {
+      if (positional.length === 0) {
+        error("Missing skill name for uninstall");
+        log("Usage: skillmanager uninstall <skill-name> [--dry-run]");
+        process.exit(1);
+      }
+      if (positional.length > 1) {
+        error("Only one skill name is allowed");
+        process.exit(1);
+      }
+      uninstall({
+        skillName: positional[0],
+        dryRun: flags.dryRun,
+      });
       break;
     }
     case "update": {
