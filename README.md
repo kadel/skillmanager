@@ -16,39 +16,53 @@ Skills are installed into `~/.claude/skills/` where Claude Code can discover and
 
 - [Node.js](https://nodejs.org/) >= 18
 
-## Installation
+## Quick start (no install needed)
+
+Run directly with `npx`:
 
 ```bash
-npm install -g skillmanager
+npx @tomaskral/skillmanager@latest install https://github.com/owner/repo/tree/main/path/to/skill
 ```
 
+## Installation
+
+If you prefer a persistent install:
+
+```bash
+npm install -g @tomaskral/skillmanager
+```
+
+After a global install, use `skillmanager` directly instead of `npx @tomaskral/skillmanager@latest`.
+
 ## Usage
+
+The examples below use `npx` for convenience. If you installed globally, replace `npx @tomaskral/skillmanager@latest` with `skillmanager`.
 
 ### Install a skill
 
 From a local path:
 
 ```bash
-npx skillmanager install ~/Code/my-plugins/skills/my-skill
-npx skillmanager install ./plugins/jira-utils/skills/use-jira-cli
+npx @tomaskral/skillmanager@latest install ~/Code/my-plugins/skills/my-skill
+npx @tomaskral/skillmanager@latest install ./plugins/jira-utils/skills/use-jira-cli
 ```
 
 From a GitHub URL (use the `tree` URL for the skill directory):
 
 ```bash
-npx skillmanager install https://github.com/owner/repo/tree/main/path/to/skill
+npx @tomaskral/skillmanager@latest install https://github.com/owner/repo/tree/main/path/to/skill
 ```
 
 If the skill already exists, use `--force` to overwrite:
 
 ```bash
-npx skillmanager install ./path/to/skill --force
+npx @tomaskral/skillmanager@latest install ./path/to/skill --force
 ```
 
 Preview what would happen without making changes:
 
 ```bash
-npx skillmanager install ./path/to/skill --dry-run
+npx @tomaskral/skillmanager@latest install ./path/to/skill --dry-run
 ```
 
 ### Update installed skills
@@ -56,19 +70,19 @@ npx skillmanager install ./path/to/skill --dry-run
 Update a single skill:
 
 ```bash
-npx skillmanager update my-skill
+npx @tomaskral/skillmanager@latest update my-skill
 ```
 
 Update all installed skills:
 
 ```bash
-npx skillmanager update --all
+npx @tomaskral/skillmanager@latest update --all
 ```
 
 Force re-install even if already up to date:
 
 ```bash
-npx skillmanager update my-skill --force
+npx @tomaskral/skillmanager@latest update my-skill --force
 ```
 
 ## Details
