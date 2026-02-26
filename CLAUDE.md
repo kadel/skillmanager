@@ -16,8 +16,8 @@ npm install
 npm run build
 
 # Run the CLI
-node dist/index.js install <local-path-or-github-url> [--force] [--dry-run]
-node dist/index.js update [<skill-name>] [--all] [--force] [--dry-run]
+npx skillmanager install <local-path-or-github-url> [--force] [--dry-run]
+npx skillmanager update [<skill-name>] [--all] [--force] [--dry-run]
 
 # Type check
 npx tsc --noEmit

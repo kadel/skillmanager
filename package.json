@@ -2,6 +2,10 @@
   "name": "skillmanager",
   "version": "0.1.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tkral/skillmanager.git"
+  },
   "bin": {
     "skillmanager": "dist/index.js"
   },
@@ -11,10 +15,12 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "semantic-release": "^24.0.0",
     "typescript": "^5.9.3"
   }
 }

@@ -19,9 +19,7 @@ Skills are installed into `~/.claude/skills/` where Claude Code can discover and
 ## Installation
 
 ```bash
-cd scripts/skillmanager
-npm install
-npm run build
+npm install -g skillmanager
 ```
 
 ## Usage
@@ -31,26 +29,26 @@ npm run build
 From a local path:
 
 ```bash
-node dist/index.js install ~/Code/my-plugins/skills/my-skill
-node dist/index.js install ./plugins/jira-utils/skills/use-jira-cli
+npx skillmanager install ~/Code/my-plugins/skills/my-skill
+npx skillmanager install ./plugins/jira-utils/skills/use-jira-cli
 ```
 
 From a GitHub URL (use the `tree` URL for the skill directory):
 
 ```bash
-node dist/index.js install https://github.com/owner/repo/tree/main/path/to/skill
+npx skillmanager install https://github.com/owner/repo/tree/main/path/to/skill
 ```
 
 If the skill already exists, use `--force` to overwrite:
 
 ```bash
-node dist/index.js install ./path/to/skill --force
+npx skillmanager install ./path/to/skill --force
 ```
 
 Preview what would happen without making changes:
 
 ```bash
-node dist/index.js install ./path/to/skill --dry-run
+npx skillmanager install ./path/to/skill --dry-run
 ```
 
 ### Update installed skills
@@ -58,19 +56,19 @@ node dist/index.js install ./path/to/skill --dry-run
 Update a single skill:
 
 ```bash
-node dist/index.js update my-skill
+npx skillmanager update my-skill
 ```
 
 Update all installed skills:
 
 ```bash
-node dist/index.js update --all
+npx skillmanager update --all
 ```
 
 Force re-install even if already up to date:
 
 ```bash
-node dist/index.js update my-skill --force
+npx skillmanager update my-skill --force
 ```
 
 ## Details
