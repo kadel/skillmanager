@@ -1,7 +1,10 @@
 {
-  "name": "skillmanager",
+  "name": "@tomaskral/skillmanager",
   "version": "0.1.0",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kadel/skillmanager.git"
