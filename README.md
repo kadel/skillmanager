@@ -65,6 +65,18 @@ Preview what would happen without making changes:
 npx @tomaskral/skillmanager@latest install ./path/to/skill --dry-run
 ```
 
+### Uninstall a skill
+
+```bash
+npx @tomaskral/skillmanager@latest uninstall my-skill
+```
+
+Preview what would be removed without making changes:
+
+```bash
+npx @tomaskral/skillmanager@latest uninstall my-skill --dry-run
+```
+
 ### Update installed skills
 
 Update a single skill:
