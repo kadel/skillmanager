@@ -3,40 +3,44 @@ import { install } from "./commands/install.js";
 import { list } from "./commands/list.js";
 import { uninstall } from "./commands/uninstall.js";
 import { update } from "./commands/update.js";
+import { AGENT_NAMES, isValidAgent, type AgentName, type Scope } from "./agents.js";
 import { error, log } from "./utils.js";
 
 const HELP = `
-skillmanager - Install and update Claude Code skills
+skillmanager - Install and update agent skills
 
 Usage:
-  skillmanager install <local-path-or-github-url> [--force] [--dry-run]
+  skillmanager install <source> --agent <name> [--agent <name>...] [-g | -p] [--force] [--dry-run]
   skillmanager list
   skillmanager uninstall <skill-name> [--dry-run]
   skillmanager update [<skill-name>] [--all] [--force] [--dry-run]
 
 Commands:
   install    Install a skill from a local path or GitHub URL
-  list       List all installed skills
+  list       List all installed skills across all agents
   uninstall  Remove an installed skill
   update     Check for updates and re-install changed skills
 
 Options:
-  --force    Overwrite existing skill / force re-install
-  --dry-run  Show what would be done without making changes
-  --all      Update all installed skills (update command only)
-  --help     Show this help message
+  --agent, -a <name>  Target agent(s): ${AGENT_NAMES.join(", ")} (required for install, repeatable)
+  -g, --global        Install to user home directory (~/<agent>/skills/)
+  -p, --project       Install to project directory (./<agent>/skills/) (default)
+  --force             Overwrite existing skill / force re-install
+  --dry-run           Show what would be done without making changes
+  --all               Update all installed skills (update command only)
+  --help              Show this help message
 
 Examples:
-  skillmanager install ~/Code/my-plugins/skills/my-skill
-  skillmanager install https://github.com/owner/repo/tree/branch/path/to/skill
-  skillmanager install ./plugins/jira-utils/skills/use-jira-cli --force
+  skillmanager install ~/Code/my-skill --agent claude
+  skillmanager install ./my-skill --agent claude --agent codex -g
+  skillmanager install https://github.com/owner/repo/tree/branch/path --agent gemini
   skillmanager uninstall my-skill
-  skillmanager update my-skill --dry-run
+  skillmanager list
+  skillmanager update my-skill --force
   skillmanager update --all
 `.trim();
 
 function parseArgs(argv: string[]) {
-  // argv[0] = bun, argv[1] = script path
   const args = argv.slice(2);
 
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -51,11 +55,15 @@ function parseArgs(argv: string[]) {
     force: false,
     dryRun: false,
     all: false,
+    global: false,
+    project: false,
+    agents: [] as string[],
   };
 
   const positional: string[] = [];
 
-  for (const arg of rest) {
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i];
     switch (arg) {
       case "--force":
         flags.force = true;
@@ -66,6 +74,25 @@ function parseArgs(argv: string[]) {
       case "--all":
         flags.all = true;
         break;
+      case "-g":
+      case "--global":
+        flags.global = true;
+        break;
+      case "-p":
+      case "--project":
+        flags.project = true;
+        break;
+      case "-a":
+      case "--agent": {
+        const next = rest[i + 1];
+        if (!next || next.startsWith("-")) {
+          error("--agent requires a value");
+          process.exit(1);
+        }
+        flags.agents.push(next);
+        i++;
+        break;
+      }
       default:
         if (arg.startsWith("-")) {
           error(`Unknown option: ${arg}`);
@@ -86,15 +113,35 @@ async function main() {
     case "install": {
       if (positional.length === 0) {
         error("Missing source argument for install");
-        log("Usage: skillmanager install <local-path-or-github-url> [--force] [--dry-run]");
+        log("Usage: skillmanager install <source> --agent <name> [--agent <name>...] [-g | -p] [--force] [--dry-run]");
         process.exit(1);
       }
       if (positional.length > 1) {
         error("Only one source argument is allowed");
         process.exit(1);
       }
+      if (flags.agents.length === 0) {
+        error("Missing --agent flag. Specify at least one agent: " + AGENT_NAMES.join(", "));
+        process.exit(1);
+      }
+      for (const a of flags.agents) {
+        if (!isValidAgent(a)) {
+          error(`Unknown agent: '${a}'. Valid agents: ${AGENT_NAMES.join(", ")}`);
+          process.exit(1);
+        }
+      }
+      if (flags.global && flags.project) {
+        error("Cannot use both -g/--global and -p/--project");
+        process.exit(1);
+      }
+
+      const scope: Scope = flags.global ? "global" : "project";
+      const agents = [...new Set(flags.agents)] as AgentName[];
+
       await install({
         source: positional[0],
+        agents,
+        scope,
         force: flags.force,
         dryRun: flags.dryRun,
       });

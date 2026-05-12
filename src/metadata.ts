@@ -1,8 +1,10 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import type { AgentName } from "./agents.js";
 
 export interface GitHubMetadata {
   source_type: "github";
+  agent: AgentName;
   source_url: string;
   github_commit: string;
   installed_at: string;
@@ -11,6 +13,7 @@ export interface GitHubMetadata {
 
 export interface LocalMetadata {
   source_type: "local";
+  agent: AgentName;
   source_path: string;
   local_git_commit?: string;
   installed_at: string;

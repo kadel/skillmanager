@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, rmSync, cpSync, mkdtempSync } from "fs";
-import { join, basename } from "path";
+import { join } from "path";
 import { tmpdir } from "os";
-import { SKILLS_DIR, validateSkillDir, log, info, error, success } from "../utils.js";
+import { getAllSkillsDirs } from "../agents.js";
+import { validateSkillDir, log, info, error, success } from "../utils.js";
 import {
   readMetadata,
   writeMetadata,
@@ -19,6 +20,13 @@ interface UpdateOptions {
   dryRun: boolean;
 }
 
+interface InstalledSkill {
+  name: string;
+  dir: string;
+  agent: string;
+  scope: string;
+}
+
 export async function update(options: UpdateOptions): Promise<void> {
   const { skillName, all, force, dryRun } = options;
 
@@ -27,65 +35,75 @@ export async function update(options: UpdateOptions): Promise<void> {
     process.exit(1);
   }
 
-  if (!existsSync(SKILLS_DIR)) {
-    error(`Skills directory not found: ${SKILLS_DIR}`);
-    process.exit(1);
-  }
+  const installed = getInstalledSkills();
 
-  const skillNames = all ? getInstalledSkills() : [skillName!];
-
-  if (skillNames.length === 0) {
+  if (installed.length === 0) {
     log("No installed skills with metadata found.");
     return;
   }
 
-  for (const name of skillNames) {
-    await updateSkill(name, force, dryRun);
-  }
-}
+  const targets = all
+    ? installed
+    : installed.filter((s) => s.name === skillName);
 
-function getInstalledSkills(): string[] {
-  if (!existsSync(SKILLS_DIR)) return [];
-
-  return readdirSync(SKILLS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .filter((entry) => {
-      const metadata = readMetadata(join(SKILLS_DIR, entry.name));
-      return metadata !== null;
-    })
-    .map((entry) => entry.name);
-}
-
-async function updateSkill(
-  skillName: string,
-  force: boolean,
-  dryRun: boolean
-): Promise<void> {
-  const skillDir = join(SKILLS_DIR, skillName);
-
-  if (!existsSync(skillDir)) {
+  if (targets.length === 0) {
     error(`Skill '${skillName}' is not installed`);
     return;
   }
 
-  const metadata = readMetadata(skillDir);
+  for (const skill of targets) {
+    await updateSkill(skill, force, dryRun);
+  }
+}
+
+function getInstalledSkills(): InstalledSkill[] {
+  const results: InstalledSkill[] = [];
+
+  for (const entry of getAllSkillsDirs()) {
+    if (!existsSync(entry.dir)) continue;
+
+    const dirs = readdirSync(entry.dir, { withFileTypes: true }).filter((d) =>
+      d.isDirectory()
+    );
+
+    for (const d of dirs) {
+      const skillDir = join(entry.dir, d.name);
+      const metadata = readMetadata(skillDir);
+      if (!metadata) continue;
+      results.push({
+        name: d.name,
+        dir: skillDir,
+        agent: metadata.agent ?? entry.agent,
+        scope: entry.scope,
+      });
+    }
+  }
+
+  return results;
+}
+
+async function updateSkill(
+  skill: InstalledSkill,
+  force: boolean,
+  dryRun: boolean
+): Promise<void> {
+  const metadata = readMetadata(skill.dir);
   if (!metadata) {
-    error(`Skill '${skillName}' has no metadata — cannot update. Reinstall it.`);
+    error(`Skill '${skill.name}' (${skill.agent}, ${skill.scope}) has no metadata — cannot update. Reinstall it.`);
     return;
   }
 
-  info(`Checking '${skillName}' for updates...`);
+  info(`Checking '${skill.name}' (${skill.agent}, ${skill.scope}) for updates...`);
 
   if (metadata.source_type === "github") {
-    await updateGitHubSkill(skillName, skillDir, metadata, force, dryRun);
+    await updateGitHubSkill(skill, metadata, force, dryRun);
   } else {
-    await updateLocalSkill(skillName, skillDir, metadata, force, dryRun);
+    await updateLocalSkill(skill, metadata, force, dryRun);
   }
 }
 
 async function updateGitHubSkill(
-  skillName: string,
-  skillDir: string,
+  skill: InstalledSkill,
   metadata: GitHubMetadata,
   force: boolean,
   dryRun: boolean
@@ -116,7 +134,7 @@ async function updateGitHubSkill(
   }
 
   if (dryRun) {
-    log(`  Would update skill '${skillName}'`);
+    log(`  Would update skill '${skill.name}'`);
     return;
   }
 
@@ -126,28 +144,25 @@ async function updateGitHubSkill(
     await downloadSkill(parsed, tmpDir);
     validateSkillDir(tmpDir);
 
-    // Replace skill contents
-    rmSync(skillDir, { recursive: true });
-    cpSync(tmpDir, skillDir, { recursive: true });
+    rmSync(skill.dir, { recursive: true });
+    cpSync(tmpDir, skill.dir, { recursive: true });
 
-    // Update metadata
     const now = new Date().toISOString();
     const updatedMetadata: GitHubMetadata = {
       ...metadata,
       github_commit: latestCommit,
       updated_at: now,
     };
-    writeMetadata(skillDir, updatedMetadata);
+    writeMetadata(skill.dir, updatedMetadata);
 
-    success(`  Updated '${skillName}'`);
+    success(`  Updated '${skill.name}' (${skill.agent})`);
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
 async function updateLocalSkill(
-  skillName: string,
-  skillDir: string,
+  skill: InstalledSkill,
   metadata: LocalMetadata,
   force: boolean,
   dryRun: boolean
@@ -162,7 +177,6 @@ async function updateLocalSkill(
   const currentCommit = await getGitCommit(sourcePath);
   const storedCommit = metadata.local_git_commit;
 
-  // Determine if update is needed
   let needsUpdate = force;
 
   if (storedCommit && currentCommit) {
@@ -178,7 +192,6 @@ async function updateLocalSkill(
       log(`  Already at latest commit, but --force specified`);
     }
   } else {
-    // No git commits to compare — always update if force, otherwise note it
     if (!force) {
       log(`  No git commit info available. Use --force to re-copy.`);
       return;
@@ -190,24 +203,22 @@ async function updateLocalSkill(
   if (!needsUpdate) return;
 
   if (dryRun) {
-    log(`  Would update skill '${skillName}'`);
+    log(`  Would update skill '${skill.name}'`);
     return;
   }
 
   validateSkillDir(sourcePath);
 
-  // Replace skill contents
-  rmSync(skillDir, { recursive: true });
-  cpSync(sourcePath, skillDir, { recursive: true });
+  rmSync(skill.dir, { recursive: true });
+  cpSync(sourcePath, skill.dir, { recursive: true });
 
-  // Update metadata
   const now = new Date().toISOString();
   const updatedMetadata: LocalMetadata = {
     ...metadata,
     updated_at: now,
     ...(currentCommit ? { local_git_commit: currentCommit } : {}),
   };
-  writeMetadata(skillDir, updatedMetadata);
+  writeMetadata(skill.dir, updatedMetadata);
 
-  success(`  Updated '${skillName}'`);
+  success(`  Updated '${skill.name}' (${skill.agent})`);
 }

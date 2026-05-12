@@ -1,8 +1,5 @@
 import { existsSync } from "fs";
 import { join } from "path";
-import { homedir } from "os";
-
-export const SKILLS_DIR = join(homedir(), ".claude", "skills");
 
 export function validateSkillDir(dir: string): void {
   const skillMd = join(dir, "SKILL.md");
