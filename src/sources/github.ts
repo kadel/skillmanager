@@ -3,6 +3,17 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { execFileSync } from "child_process";
 
+function getGitHubToken(): string | undefined {
+  const envToken = process.env.GITHUB_TOKEN;
+  if (envToken) return envToken;
+
+  try {
+    return execFileSync("gh", ["auth", "token"], { encoding: "utf-8" }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface GitHubParsed {
   owner: string;
   repo: string;
@@ -86,7 +97,7 @@ export async function fetchLatestCommit(
     "User-Agent": "skillmanager",
   };
 
-  const token = process.env.GITHUB_TOKEN;
+  const token = getGitHubToken();
   if (token) {
     headers["Authorization"] = `token ${token}`;
   }
