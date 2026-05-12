@@ -17,6 +17,7 @@ npm run build
 
 # Run the CLI
 npx skillmanager install <source> --agent <name> [--agent <name>...] [-g | -p] [--force] [--dry-run]
+npx skillmanager uninstall <skill-name> [--dry-run]
 npx skillmanager list
 npx skillmanager update [<skill-name>] [--all] [--force] [--dry-run]
 
@@ -26,11 +27,12 @@ npx tsc --noEmit
 
 ## Architecture
 
-The CLI has three commands (`install`, `list`, `update`) with two source types each (local filesystem and GitHub) and multi-agent support:
+The CLI has four commands (`install`, `uninstall`, `list`, `update`) with two source types (local filesystem and GitHub) and multi-agent support:
 
 - `src/index.ts` — Entry point, arg parsing, command dispatch
 - `src/agents.ts` — Agent registry (claude, openclaw, codex, gemini) with project/global path configs
 - `src/commands/install.ts` — Copies a skill directory to the target agent's skills dir, writes `.metadata.json` for tracking
+- `src/commands/uninstall.ts` — Removes an installed skill from all agents/scopes where it exists
 - `src/commands/update.ts` — Scans all agent dirs, reads `.metadata.json`, compares git commits to detect changes, re-copies if newer
 - `src/commands/list.ts` — Lists all installed skills across all agent directories, grouped by agent
 - `src/sources/github.ts` — Parses `github.com/owner/repo/tree/branch/path` URLs, downloads repo tarballs, extracts the skill subdirectory, fetches latest commit SHA via GitHub API
@@ -38,4 +40,4 @@ The CLI has three commands (`install`, `list`, `update`) with two source types e
 - `src/metadata.ts` — `GitHubMetadata` and `LocalMetadata` types (with `agent` field), read/write `.metadata.json`
 - `src/utils.ts` — `validateSkillDir` (checks for `SKILL.md`), colored logging helpers
 
-GitHub installs download the full branch tarball and extract only the target subdirectory using `tar --strip-components`. The `GITHUB_TOKEN` env var is used for API requests if set.
+GitHub installs download the full branch tarball and extract only the target subdirectory using `tar --strip-components`. Authentication uses the `GITHUB_TOKEN` env var if set, otherwise falls back to `gh auth token` from the GitHub CLI.
