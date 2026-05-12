@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: skillmanager
+  title: skillmanager
+  description: Node/TypeScript CLI that installs and updates agent skills from local paths or GitHub URLs, supporting multiple agents (claude, openclaw, codex, gemini).
+  annotations:
+    github.com/project-slug: kadel/skillmanager
+    backstage.io/source-location: url:https://github.com/kadel/skillmanager
+  tags:
+    - cli
+    - typescript
+    - nodejs
+    - agent-skills
+  links:
+    - url: https://github.com/kadel/skillmanager
+      title: GitHub Repository
+      icon: github
+    - url: https://www.npmjs.com/package/@tomaskral/skillmanager
+      title: npm Package
+      icon: web
+spec:
+  type: tool
+  lifecycle: production
+  owner: tomas.kral@gmail.com
+  system: agent-tooling
