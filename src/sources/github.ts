@@ -50,8 +50,15 @@ export async function downloadSkill(
   const tmpDir = mkdtempSync(join(tmpdir(), "skillmanager-"));
 
   try {
-    // Download tarball
-    const response = await fetch(tarballUrl);
+    const tarballHeaders: Record<string, string> = {
+      "User-Agent": "skillmanager",
+    };
+    const token = getGitHubToken();
+    if (token) {
+      tarballHeaders["Authorization"] = `token ${token}`;
+    }
+
+    const response = await fetch(tarballUrl, { headers: tarballHeaders });
     if (!response.ok) {
       throw new Error(
         `Failed to download tarball: ${response.status} ${response.statusText}`
