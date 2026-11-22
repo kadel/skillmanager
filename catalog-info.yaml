@@ -22,5 +22,14 @@ metadata:
 spec:
   type: tool
   lifecycle: production
-  owner: tomas.kral@gmail.com
+  owner: user:default/kadel
   system: agent-tooling
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: agent-tooling
+  title: Agent Tooling
+  description: Tools for managing AI agent skills.
+spec:
+  owner: user:default/kadel
